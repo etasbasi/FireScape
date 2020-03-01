@@ -5,9 +5,9 @@ import "@brainhubeu/react-carousel/lib/style.css";
 import FlameImg from "./assets/flame.png";
 
 const sites = [
+  "https://ualr.edu/safety/home/fire-safety/what-to-do-in-case-of-a-fire/",
   "https://www.bbc.com/news/world-australia-50951043",
-  "https://www.bbc.com/news/science-environment-51590080",
-  "https://ualr.edu/safety/home/fire-safety/what-to-do-in-case-of-a-fire/"
+  "https://www.bbc.com/news/science-environment-51590080"
 ];
 
 class News extends React.Component {
