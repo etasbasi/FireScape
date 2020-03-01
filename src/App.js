@@ -1,6 +1,11 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { compose, withProps, withHandlers } from "recompose";
-import { withScriptjs, withGoogleMap, GoogleMap } from "react-google-maps";
+import {
+  withScriptjs,
+  withGoogleMap,
+  GoogleMap,
+  Marker
+} from "react-google-maps";
 import { Navbar, Preloader, Toast } from "react-materialize";
 import { Link, BrowserRouter as Router, Route } from "react-router-dom";
 import MarkerWithLabel from "react-google-maps/lib/components/addons/MarkerWithLabel";
@@ -25,8 +30,6 @@ let points = [
   { id: 7, lat: -17.118, lng: 130.235, date: "2/10/2020" },
   { id: 8, lat: -25.118, lng: 123.235, date: "4/3/2019" }
 ];
-
-toast({ html: "hi there" });
 
 var config = {
   apiKey: "69qUVA3jVbNRBgmAEdAlEhktYHBmbMaQcWKLD4rI",
@@ -65,6 +68,8 @@ const ClusterMap = compose(
   withGoogleMap
 )(({ markers, onMarkerClustererClick, defaultCenter }) => (
   <GoogleMap defaultZoom={10} defaultCenter={defaultCenter}>
+    <Marker position={defaultCenter}></Marker>
+
     <MarkerClusterer
       onClick={onMarkerClustererClick}
       averageCenter
@@ -130,25 +135,14 @@ function App() {
         setData(data);
       });
 
-    // firebase
-    //   .database()
-    //   .ref("/users/userMobile")
-    //   .once("value")
-    //   .then(snapshot => {
-    //     console.log(snapshot.val());
-    //   });
-
     firebase
       .database()
       .ref("/users")
       .on("child_changed", snapshot => {
-        console.log(snapshot.key);
-        console.log(snapshot.val());
-
         toast({
           html: `<h5>New Alert!</h5><p>Latitude: ${
             snapshot.val().latitude
-          } Longitude: ${snapshot.val().longitude}</p>`,
+          }</p><p>Longitude: ${snapshot.val().longitude}</p>`,
           classes: "toast",
           displayLength: 10000
         });

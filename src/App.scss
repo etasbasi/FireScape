@@ -12,11 +12,11 @@ body {
   }
 
   .toast {
-    height: 120px;
+    height: fit-content;
     display: block;
 
-    h5 {
-      margin-bottom: 5px;
+    p {
+      display: block;
     }
   }
 }
