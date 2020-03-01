@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { compose, withProps, withHandlers } from "recompose";
 import {
   withScriptjs,
@@ -6,7 +6,7 @@ import {
   GoogleMap,
   Marker
 } from "react-google-maps";
-import { Navbar } from "react-materialize";
+import { Navbar, Preloader } from "react-materialize";
 import { Link, BrowserRouter as Router, Route } from "react-router-dom";
 import MarkerWithLabel from "react-google-maps/lib/components/addons/MarkerWithLabel";
 
@@ -42,10 +42,23 @@ var locations = [
   { lat: -43.999792, lng: 170.463352 }
 ];
 
+let points = [
+  { id: 1, lat: -18.422, lng: 145.321, date: "1/1/2020" },
+  { id: 2, lat: -14.118, lng: 144.235, date: "2/3/2020" },
+  { id: 3, lat: -19.029, lng: 154.235, date: "1/25/2020" },
+  { id: 4, lat: -18.118, lng: 144.235, date: "1/2/2020" },
+  { id: 5, lat: -20.029, lng: 135.293, date: "12/3/2019" },
+  { id: 6, lat: -21.118, lng: 150.235, date: "2/3/2020" },
+  { id: 7, lat: -17.118, lng: 130.235, date: "2/10/2020" },
+  { id: 8, lat: -25.118, lng: 123.235, date: "4/3/2019" }
+];
+
+const googleMapURL =
+  "https://maps.googleapis.com/maps/api/js?key=AIzaSyD2LrwDsYJpXri3K9NI7SJw_0Y7PArjuDE&v=3.exp&libraries=geometry,drawing,places";
+
 const ClusterMap = compose(
   withProps({
-    googleMapURL:
-      "https://maps.googleapis.com/maps/api/js?key=AIzaSyD2LrwDsYJpXri3K9NI7SJw_0Y7PArjuDE&v=3.exp&libraries=geometry,drawing,places",
+    googleMapURL,
     loadingElement: <div style={{ height: `100%` }} />,
     containerElement: (
       <div style={{ height: `${window.innerHeight - 65}px` }} />
@@ -59,34 +72,65 @@ const ClusterMap = compose(
   }),
   withScriptjs,
   withGoogleMap
-)(({ markers, onMarkerClustererClick }) => (
-  <GoogleMap defaultZoom={3} defaultCenter={{ lat: 25.0391667, lng: 121.525 }}>
+)(({ markers, onMarkerClustererClick, defaultCenter }) => (
+  <GoogleMap defaultZoom={10} defaultCenter={defaultCenter}>
     <MarkerClusterer
       onClick={onMarkerClustererClick}
       averageCenter
       enableRetinaIcons
       gridSize={60}
     >
-      {markers.map((marker, i) => (
-        <Marker icon={FlameImg} position={marker} key={i} />
-        // <MarkerWithLabel
-        //   icon={FlameImg}
-        //   key={i}
-        //   position={marker}
-        //   labelStyle={{
-        //     backgroundColor: "yellow",
-        //     fontSize: "32px",
-        //     padding: "16px"
-        //   }}
-        // >
-        //   <h3>Firee</h3>
-        // </MarkerWithLabel>
-      ))}
+      {markers.map((marker, i) => {
+        let labelSize = 200;
+        let labelPadding = 10;
+
+        return (
+          <MarkerWithLabel
+            labelStyle={{
+              textAlign: "center",
+              width: labelSize.width + "px",
+              backgroundColor: "#7fffd4",
+              fontSize: "14px",
+              padding: labelPadding + "px"
+            }}
+            icon={FlameImg}
+            labelAnchor={{ x: 25, y: 80 }}
+            key={i}
+            position={{ lat: marker.lat, lng: marker.lng }}
+          >
+            <span>{marker.date}</span>
+          </MarkerWithLabel>
+        );
+      })}
     </MarkerClusterer>
   </GoogleMap>
 ));
 
 function App() {
+  const [location, setLocation] = useState(undefined);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        let { latitude, longitude } = position.coords;
+        setLocation({
+          lat: Number(latitude),
+          lng: Number(longitude)
+        });
+
+        setLoading(false);
+      },
+      () => {
+        setLoading(false);
+        alert("Unable to obtain your location");
+      }
+    );
+  }, []);
+
+  let currentLocation =
+    location === undefined ? { lat: 25.0391667, lng: 121.525 } : location;
+
   return (
     <>
       <Router>
@@ -114,20 +158,24 @@ function App() {
           }}
         >
           <Link to="/">Map</Link>
-          {/* <NavItem href="components.html">Components</NavItem> */}
         </Navbar>
         <Route exact path="/">
-          <ClusterMap markers={locations} />
+          {loading ? (
+            <Preloader active color="blue" flashing={false} size="big" />
+          ) : (
+            <ClusterMap markers={points} defaultCenter={currentLocation} />
+          )}
         </Route>
       </Router>
     </>
   );
 }
 
+export default App;
+
 const Map = compose(
   withProps({
-    googleMapURL:
-      "https://maps.googleapis.com/maps/api/js?key=AIzaSyD2LrwDsYJpXri3K9NI7SJw_0Y7PArjuDE&v=3.exp&libraries=geometry,drawing,places",
+    googleMapURL,
     loadingElement: <div style={{ height: `100%` }} />,
     containerElement: (
       <div style={{ height: `${window.innerHeight - 65}px` }} />
@@ -148,5 +196,3 @@ const Map = compose(
     })}
   </GoogleMap>
 ));
-
-export default App;
