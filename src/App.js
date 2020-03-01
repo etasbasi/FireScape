@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { compose, withProps, withHandlers } from "recompose";
 import {
   withScriptjs,
@@ -19,6 +19,8 @@ import News from "./News";
 import { toast } from "materialize-css";
 
 import { MarkerClusterer } from "react-google-maps/lib/components/addons/MarkerClusterer";
+
+import Icon from "./assets/icon.png";
 
 let points = [
   { id: 1, lat: -18.422, lng: 145.321, date: "1/1/2020" },
@@ -43,10 +45,6 @@ let app = firebase.initializeApp(config);
 // Get a reference to the database service
 var database = firebase.database();
 
-// firebase.functions.database.ref("/server/firedata/").onUpdate(snapshot => {
-//   console.log(snapshot.val());
-// });
-
 const googleMapURL =
   "https://maps.googleapis.com/maps/api/js?key=AIzaSyD2LrwDsYJpXri3K9NI7SJw_0Y7PArjuDE&v=3.exp&libraries=geometry,drawing,places";
 
@@ -66,9 +64,43 @@ const ClusterMap = compose(
   }),
   withScriptjs,
   withGoogleMap
-)(({ markers, onMarkerClustererClick, defaultCenter }) => (
-  <GoogleMap defaultZoom={10} defaultCenter={defaultCenter}>
-    <Marker position={defaultCenter}></Marker>
+)(({ markers, onMarkerClustererClick, defaultCenter, center }) => (
+  <GoogleMap
+    defaultZoom={10}
+    defaultCenter={defaultCenter}
+    center={center ? center : defaultCenter}
+  >
+    <MarkerWithLabel
+      labelStyle={{
+        textAlign: "center",
+        width: "110px",
+        backgroundColor: "#ffffff",
+        color: "black",
+        fontSize: "14px",
+        padding: "2px"
+      }}
+      labelAnchor={{ x: 50, y: 110 }}
+      position={defaultCenter}
+    >
+      <p>Current Location</p>
+    </MarkerWithLabel>
+
+    {center !== undefined && center !== null ? (
+      <MarkerWithLabel
+        labelStyle={{
+          textAlign: "center",
+          width: "110px",
+          backgroundColor: "#ffffff",
+          color: "black",
+          fontSize: "14px",
+          padding: "2px"
+        }}
+        labelAnchor={{ x: 50, y: 110 }}
+        position={center}
+      >
+        <p>Alert Location</p>
+      </MarkerWithLabel>
+    ) : null}
 
     <MarkerClusterer
       onClick={onMarkerClustererClick}
@@ -110,7 +142,7 @@ function App() {
   const [location, setLocation] = useState(undefined);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState([]);
-
+  const [center, setCenter] = useState(null);
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -139,6 +171,9 @@ function App() {
       .database()
       .ref("/users")
       .on("child_changed", snapshot => {
+        let lat = snapshot.val().latitude;
+        let lng = snapshot.val().longitude;
+
         toast({
           html: `<h5>New Alert!</h5><p>Latitude: ${
             snapshot.val().latitude
@@ -146,6 +181,8 @@ function App() {
           classes: "toast",
           displayLength: 10000
         });
+
+        setCenter({ lat, lng });
       });
 
     setLoading(false);
@@ -185,6 +222,11 @@ function App() {
               style={{ cursor: "pointer", marginLeft: "20px" }}
               className="brand-logo"
             >
+              <img
+                src={Icon}
+                alt=""
+                style={{ height: "35px", marginRight: "20px" }}
+              />
               FireScape
             </div>
           }
@@ -208,7 +250,11 @@ function App() {
           {loading ? (
             <Preloader active color="blue" flashing={false} size="big" />
           ) : (
-            <ClusterMap markers={data} defaultCenter={currentLocation} />
+            <ClusterMap
+              markers={data}
+              defaultCenter={currentLocation}
+              center={center ? center : null}
+            />
           )}
         </Route>
 
