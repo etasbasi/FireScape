@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { compose, withProps, withHandlers } from "recompose";
 import {
   withScriptjs,
@@ -9,6 +9,7 @@ import {
 import { Navbar, Preloader } from "react-materialize";
 import { Link, BrowserRouter as Router, Route } from "react-router-dom";
 import MarkerWithLabel from "react-google-maps/lib/components/addons/MarkerWithLabel";
+import axios from "axios";
 
 import FlameImg from "./assets/flame.png";
 import "./App.scss";
@@ -89,16 +90,17 @@ const ClusterMap = compose(
             labelStyle={{
               textAlign: "center",
               width: labelSize.width + "px",
-              backgroundColor: "#7fffd4",
+              backgroundColor: "#ffffff",
+              color: "black",
               fontSize: "14px",
               padding: labelPadding + "px"
             }}
             icon={FlameImg}
-            labelAnchor={{ x: 25, y: 80 }}
+            labelAnchor={{ x: 35, y: 80 }}
             key={i}
-            position={{ lat: marker.lat, lng: marker.lng }}
+            position={{ lat: marker.latitude, lng: marker.longitude }}
           >
-            <span>{marker.date}</span>
+            <span>{marker.acq_date}</span>
           </MarkerWithLabel>
         );
       })}
@@ -109,8 +111,24 @@ const ClusterMap = compose(
 function App() {
   const [location, setLocation] = useState(undefined);
   const [loading, setLoading] = useState(true);
+  const [data, setData] = useState([]);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      let res = await axios.get("http://localhost:5000/items");
+      console.log("items fetched");
+      setData(res.data);
+    } catch (e) {
+      console.log(e);
+    }
+
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
+    fetchData();
+
     navigator.geolocation.getCurrentPosition(
       position => {
         let { latitude, longitude } = position.coords;
@@ -126,7 +144,7 @@ function App() {
         alert("Unable to obtain your location");
       }
     );
-  }, []);
+  }, [fetchData]);
 
   let currentLocation =
     location === undefined ? { lat: 25.0391667, lng: 121.525 } : location;
@@ -163,7 +181,7 @@ function App() {
           {loading ? (
             <Preloader active color="blue" flashing={false} size="big" />
           ) : (
-            <ClusterMap markers={points} defaultCenter={currentLocation} />
+            <ClusterMap markers={data} defaultCenter={currentLocation} />
           )}
         </Route>
       </Router>
@@ -172,27 +190,3 @@ function App() {
 }
 
 export default App;
-
-const Map = compose(
-  withProps({
-    googleMapURL,
-    loadingElement: <div style={{ height: `100%` }} />,
-    containerElement: (
-      <div style={{ height: `${window.innerHeight - 65}px` }} />
-    ),
-    mapElement: <div style={{ height: `100%` }} />
-  }),
-  withScriptjs,
-  withGoogleMap
-)(() => (
-  <GoogleMap
-    style={{ height: "100%" }}
-    className="map"
-    defaultZoom={8}
-    defaultCenter={{ lat: -34.397, lng: 150.644 }}
-  >
-    {locations.map((location, index) => {
-      return <Marker key={index} position={location} icon={FlameImg} />;
-    })}
-  </GoogleMap>
-));
