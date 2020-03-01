@@ -1,47 +1,19 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { compose, withProps, withHandlers } from "recompose";
-import {
-  withScriptjs,
-  withGoogleMap,
-  GoogleMap,
-  Marker
-} from "react-google-maps";
-import { Navbar, Preloader } from "react-materialize";
+import { withScriptjs, withGoogleMap, GoogleMap } from "react-google-maps";
+import { Navbar, Preloader, Toast } from "react-materialize";
 import { Link, BrowserRouter as Router, Route } from "react-router-dom";
 import MarkerWithLabel from "react-google-maps/lib/components/addons/MarkerWithLabel";
 import axios from "axios";
+import firebase from "firebase";
 
 import FlameImg from "./assets/flame.png";
 import "./App.scss";
-const {
-  MarkerClusterer
-} = require("react-google-maps/lib/components/addons/MarkerClusterer");
+import News from "./News";
 
-var locations = [
-  { lat: -31.56391, lng: 147.154312 },
-  { lat: -33.718234, lng: 150.363181 },
-  { lat: -33.727111, lng: 150.371124 },
-  { lat: -33.848588, lng: 151.209834 },
-  { lat: -33.851702, lng: 151.216968 },
-  { lat: -34.671264, lng: 150.863657 },
-  { lat: -35.304724, lng: 148.662905 },
-  { lat: -36.817685, lng: 175.699196 },
-  { lat: -36.828611, lng: 175.790222 },
-  { lat: -37.75, lng: 145.116667 },
-  { lat: -37.759859, lng: 145.128708 },
-  { lat: -37.765015, lng: 145.133858 },
-  { lat: -37.770104, lng: 145.143299 },
-  { lat: -37.7737, lng: 145.145187 },
-  { lat: -37.774785, lng: 145.137978 },
-  { lat: -37.819616, lng: 144.968119 },
-  { lat: -38.330766, lng: 144.695692 },
-  { lat: -39.927193, lng: 175.053218 },
-  { lat: -41.330162, lng: 174.865694 },
-  { lat: -42.734358, lng: 147.439506 },
-  { lat: -42.734358, lng: 147.501315 },
-  { lat: -42.735258, lng: 147.438 },
-  { lat: -43.999792, lng: 170.463352 }
-];
+import { toast } from "materialize-css";
+
+import { MarkerClusterer } from "react-google-maps/lib/components/addons/MarkerClusterer";
 
 let points = [
   { id: 1, lat: -18.422, lng: 145.321, date: "1/1/2020" },
@@ -53,6 +25,24 @@ let points = [
   { id: 7, lat: -17.118, lng: 130.235, date: "2/10/2020" },
   { id: 8, lat: -25.118, lng: 123.235, date: "4/3/2019" }
 ];
+
+toast({ html: "hi there" });
+
+var config = {
+  apiKey: "69qUVA3jVbNRBgmAEdAlEhktYHBmbMaQcWKLD4rI",
+  authDomain: "friescape.firebaseapp.com",
+  databaseURL: "https://friescape.firebaseio.com",
+  storageBucket: "firedata.appspot.com"
+};
+
+let app = firebase.initializeApp(config);
+
+// Get a reference to the database service
+var database = firebase.database();
+
+// firebase.functions.database.ref("/server/firedata/").onUpdate(snapshot => {
+//   console.log(snapshot.val());
+// });
 
 const googleMapURL =
   "https://maps.googleapis.com/maps/api/js?key=AIzaSyD2LrwDsYJpXri3K9NI7SJw_0Y7PArjuDE&v=3.exp&libraries=geometry,drawing,places";
@@ -98,7 +88,10 @@ const ClusterMap = compose(
             icon={FlameImg}
             labelAnchor={{ x: 35, y: 80 }}
             key={i}
-            position={{ lat: marker.latitude, lng: marker.longitude }}
+            position={{
+              lat: Number(marker.latitiude),
+              lng: Number(marker.longitude)
+            }}
           >
             <span>{marker.acq_date}</span>
           </MarkerWithLabel>
@@ -126,8 +119,47 @@ function App() {
     setLoading(false);
   }, []);
 
+  const fetchDataFromFirebase = useCallback(async () => {
+    setLoading(true);
+    firebase
+      .database()
+      .ref("/server/firedata/australia")
+      .once("value")
+      .then(function(snapshot) {
+        let data = snapshot.val();
+        setData(data);
+      });
+
+    // firebase
+    //   .database()
+    //   .ref("/users/userMobile")
+    //   .once("value")
+    //   .then(snapshot => {
+    //     console.log(snapshot.val());
+    //   });
+
+    firebase
+      .database()
+      .ref("/users")
+      .on("child_changed", snapshot => {
+        console.log(snapshot.key);
+        console.log(snapshot.val());
+
+        toast({
+          html: `<h5>New Alert!</h5><p>Latitude: ${
+            snapshot.val().latitude
+          } Longitude: ${snapshot.val().longitude}</p>`,
+          classes: "toast",
+          displayLength: 10000
+        });
+      });
+
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
-    fetchData();
+    // fetchData();
+    fetchDataFromFirebase();
 
     navigator.geolocation.getCurrentPosition(
       position => {
@@ -144,10 +176,10 @@ function App() {
         alert("Unable to obtain your location");
       }
     );
-  }, [fetchData]);
+  }, [fetchDataFromFirebase]);
 
   let currentLocation =
-    location === undefined ? { lat: 25.0391667, lng: 121.525 } : location;
+    location === undefined ? { lat: -24.9929159, lng: 115.2297986 } : location;
 
   return (
     <>
@@ -176,6 +208,7 @@ function App() {
           }}
         >
           <Link to="/">Map</Link>
+          <Link to="/news">News</Link>
         </Navbar>
         <Route exact path="/">
           {loading ? (
@@ -183,6 +216,10 @@ function App() {
           ) : (
             <ClusterMap markers={data} defaultCenter={currentLocation} />
           )}
+        </Route>
+
+        <Route exact path="/news">
+          <News />
         </Route>
       </Router>
     </>

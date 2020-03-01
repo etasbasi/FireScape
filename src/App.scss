@@ -1,4 +1,22 @@
 html,
 body {
   height: 100%;
+
+  nav {
+    background-color: lighten(blue, 20%);
+  }
+
+  iframe {
+    height: 90vh;
+    width: 100%;
+  }
+
+  .toast {
+    height: 120px;
+    display: block;
+
+    h5 {
+      margin-bottom: 5px;
+    }
+  }
 }
